@@ -9,7 +9,6 @@ import org.bson.Document;
 
 /**
  *
- * @author mnish
  */
 public class TesKoneksi {
     public static void main(String[] args) {
