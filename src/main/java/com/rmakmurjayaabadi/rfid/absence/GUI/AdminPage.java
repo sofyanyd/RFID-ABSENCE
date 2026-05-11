@@ -11,7 +11,7 @@ import com.rmakmurjayaabadi.rfid.absence.KaryawanService;
 
 /**
  *
- * @author mnish
+ * @author
  */
 public class AdminPage extends javax.swing.JFrame {
 
