@@ -1,5 +1,6 @@
 package com.rmakmurjayaabadi.rfid.absence;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -14,17 +15,19 @@ public class MongoManager {
 
     public static MongoDatabase getDatabase() {
         if (mongoClient == null) {
-            // Konfigurasi CodecRegistry untuk pemetaan POJO otomatis (Standard Industry)
+            // Gabungkan registry default dengan PojoCodecProvider
             CodecRegistry pojoCodecRegistry = CodecRegistries.fromRegistries(
                 MongoClientSettings.getDefaultCodecRegistry(),
                 CodecRegistries.fromProviders(PojoCodecProvider.builder().automatic(true).build())
             );
 
-            // Inisiasi koneksi ke MongoDB Localhost (Driver 5.0.0)
-            mongoClient = MongoClients.create("mongodb://localhost:27017");
-            
-            // Mengembalikan database dengan registry yang sudah dikonfigurasi
-            return mongoClient.getDatabase(DATABASE_NAME).withCodecRegistry(pojoCodecRegistry);
+            // Konfigurasi settings agar global
+            MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString("mongodb://localhost:27017"))
+                .codecRegistry(pojoCodecRegistry)
+                .build();
+
+            mongoClient = MongoClients.create(settings);
         }
         return mongoClient.getDatabase(DATABASE_NAME);
     }
