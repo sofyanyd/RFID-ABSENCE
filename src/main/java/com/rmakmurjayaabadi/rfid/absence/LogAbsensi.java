@@ -19,6 +19,18 @@ public class LogAbsensi {
         this.divisi = divisi;
     }
 
+    @Override
+    public String toString() {
+        return "LogAbsensi{" +
+                "idKaryawan='" + idKaryawan + '\'' +
+                ", namaKaryawan='" + namaKaryawan + '\'' +
+                ", tanggal='" + tanggal + '\'' +
+                ", waktu='" + waktu + '\'' +
+                ", status='" + status + '\'' +
+                ", divisi='" + divisi + '\'' +
+                '}';
+    }
+
     // Getter & Setter
     public String getIdKaryawan() { return idKaryawan; }
     public void setIdKaryawan(String idKaryawan) { this.idKaryawan = idKaryawan; }

@@ -5,7 +5,7 @@ public class Karyawan {
     private String idKaryawan;
     private String namaLengkap; // Sesuai JSON
     private String divisi;      // Sesuai JSON
-    private String kontrak;    // Tambahkan ini agar sinkron dengan tabel di UI
+    private String kontrak;     // Tambahkan ini agar sinkron dengan tabel di UI
 
     public Karyawan() {}
 
@@ -19,7 +19,7 @@ public class Karyawan {
 
     @Override
     public String toString() {
-        return "Karyawan{" + "uidRfid=" + uidRfid + ", idKaryawan=" + idKaryawan + 
+        return "Karyawan{" + "uidRfid=" + uidRfid + ", idKaryawan=" + idKaryawan +
                ", namaLengkap=" + namaLengkap + ", divisi=" + divisi + ", kontrak=" + kontrak + '}';
     }
 
