@@ -1,12 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.rmakmurjayaabadi.rfid.absence;
 
 /**
- *
- * @author sofya
+ * Model untuk Shift kerja karyawan
+ * @author MJA IT Team
  */
 public class Shift {
     private String jamMasuk;
@@ -15,6 +11,22 @@ public class Shift {
 
     public Shift() {}
 
+    public Shift(String jamMasuk, String batasToleransi, boolean isActive) {
+        this.jamMasuk = jamMasuk;
+        this.batasToleransi = batasToleransi;
+        this.isActive = isActive;
+    }
+
+    @Override
+    public String toString() {
+        return "Shift{" +
+                "jamMasuk='" + jamMasuk + '\'' +
+                ", batasToleransi='" + batasToleransi + '\'' +
+                ", isActive=" + isActive +
+                '}';
+    }
+
+    // Getter & Setter
     public String getJamMasuk() { return jamMasuk; }
     public void setJamMasuk(String jamMasuk) { this.jamMasuk = jamMasuk; }
 

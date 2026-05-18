@@ -7,50 +7,43 @@ package com.rmakmurjayaabadi.rfid.absence.GUI;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.rmakmurjayaabadi.rfid.absence.GenericDAO;
-import com.rmakmurjayaabadi.rfid.absence.LogAbsensi;
+import com.rmakmurjayaabadi.rfid.absence.Karyawan;
 import com.rmakmurjayaabadi.rfid.absence.MongoManager;
 import java.awt.*;
-import java.util.List;
+import java.util.List; 
 import javax.swing.*;
 import javax.swing.table.*;
+import com.mongodb.client.model.Filters;
 /**
  *
  * @author sofya
  */
-public class DashboardPage extends javax.swing.JFrame {
-    private JTable tblAbsensi;
+public class DataKaryawanPage extends javax.swing.JFrame {
+    
+    private JTable tblKaryawan;
     private DefaultTableModel tableModel;
     private JTextField txtSearch;
-    
-    private JLabel lblTepatWaktuValue;
-    private JLabel lblTerlambatValue;
-    private JLabel lblAbsenValue;
 
-    private final Color PRIMARY_COLOR = new Color(2, 63, 75);
-    private final Color BACKGROUND_COLOR = new Color(226, 222, 222);
+    private final Color PRIMARY_COLOR = new Color(2, 63, 75);      
+    private final Color BACKGROUND_COLOR = new Color(226, 222, 222); 
     private final Color SIDEBAR_BG = Color.WHITE;
-    private final Color BUTTON_GRAY = new Color(217, 217, 217);
+    private final Color BUTTON_GRAY = new Color(217, 217, 217);     
     private final Color BUTTON_ACTIVE = PRIMARY_COLOR;
 
-    public DashboardPage() {
-        // Panggil komponen grafis manual kita
+    public DataKaryawanPage() {
         initManualComponents();
         this.setLocationRelativeTo(null);
         
         try {
-            System.out.println("🔗 Membuka koneksi MongoDB...");
             MongoManager.getDatabase(); 
-            
-            System.out.println("📊 Sinkronisasi data live absensi...");
-            loadLiveAbsensi(); 
+            loadDataKaryawan();
         } catch (Exception e) {
-            System.err.println("⚠️ Gagal sinkronisasi otomatis, menggunakan Demo Mode.");
             e.printStackTrace();
         }
     }
 
     private void initManualComponents() {
-        setTitle("ADMINISTRATOR - Dashboard");
+        setTitle("ADMINISTRATOR - Data Karyawan");
         setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(null);
@@ -58,7 +51,7 @@ public class DashboardPage extends javax.swing.JFrame {
 
         createSidebar();
         createHeader();
-        createMainContent();
+        createContentArea();
     }
 
     private void createSidebar() {
@@ -91,23 +84,20 @@ public class DashboardPage extends javax.swing.JFrame {
         int btnHeight = 45;
         int btnSpacing = 50;
 
-        // Dashboard Button (Active)
-        JButton btnDashboard = createMenuButton("Dashboard", true);
+        JButton btnDashboard = createMenuButton("Dashboard", false);
         btnDashboard.setBounds(20, yPos, btnWidth, btnHeight);
+        btnDashboard.addActionListener(e -> {
+            new DashboardPage().setVisible(true);
+            this.dispose();
+        });
         sidebar.add(btnDashboard);
         yPos += btnSpacing;
 
-        // Data Karyawan Button
-        JButton btnDataKaryawan = createMenuButton("Data Karyawan", false);
+        JButton btnDataKaryawan = createMenuButton("Data Karyawan", true);
         btnDataKaryawan.setBounds(20, yPos, btnWidth, btnHeight);
-        btnDataKaryawan.addActionListener(e -> {
-            new DataKaryawanPage().setVisible(true);
-            this.dispose();
-        });
         sidebar.add(btnDataKaryawan);
         yPos += btnSpacing;
 
-        // Riwayat Absensi Button
         JButton btnRiwayat = createMenuButton("Riwayat Absensi", false);
         btnRiwayat.setBounds(20, yPos, btnWidth, btnHeight);
         btnRiwayat.addActionListener(e -> {
@@ -117,7 +107,6 @@ public class DashboardPage extends javax.swing.JFrame {
         sidebar.add(btnRiwayat);
         yPos += btnSpacing;
 
-        // Ekspor Laporan Button
         JButton btnEkspor = createMenuButton("Ekspor Laporan", false);
         btnEkspor.setBounds(20, yPos, btnWidth, btnHeight);
         btnEkspor.addActionListener(e -> {
@@ -134,7 +123,6 @@ public class DashboardPage extends javax.swing.JFrame {
 
         yPos = 445;
         
-        // Shift & Jam Kerja Button
         JButton btnShift = createMenuButton("Shift & Jam Kerja", false);
         btnShift.setBounds(20, yPos, btnWidth, btnHeight);
         btnShift.addActionListener(e -> {
@@ -151,8 +139,11 @@ public class DashboardPage extends javax.swing.JFrame {
         btnKeluar.setCursor(new Cursor(Cursor.HAND_CURSOR)); 
         btnKeluar.putClientProperty(FlatClientProperties.STYLE, "arc: 13");
         btnKeluar.addActionListener(e -> {
-            MongoManager.close();
-            System.exit(0);
+            int confirm = JOptionPane.showConfirmDialog(this, "Apakah yakin ingin keluar?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                MongoManager.close();
+                System.exit(0);
+            }
         });
         sidebar.add(btnKeluar);
     }
@@ -180,101 +171,76 @@ public class DashboardPage extends javax.swing.JFrame {
         header.add(lblAdminName);
     }
 
-    private void createMainContent() {
-        JLabel lblTitle = new JLabel("Dashboard");
+    private void createContentArea() {
+        JLabel lblTitle = new JLabel("Data Karyawan");
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
         lblTitle.setForeground(Color.BLACK);
         lblTitle.setBounds(270, 100, 300, 30);
         add(lblTitle);
 
-        createStatisticsCards();
+        int buttonWidth = 180;
+        int buttonHeight = 80;
+        int buttonGap = 40;
+        int buttonY = 145;
 
-        JLabel lblLiveAbsensi = new JLabel("Live Absensi");
-        lblLiveAbsensi.setFont(new Font("SansSerif", Font.BOLD, 24));
-        lblLiveAbsensi.setForeground(Color.BLACK);
-        lblLiveAbsensi.setBounds(270, 260, 300, 30);
-        add(lblLiveAbsensi);
+        JButton btnTambah = new JButton("Tambah Karyawan Baru");
+        btnTambah.setBackground(BUTTON_GRAY);
+        btnTambah.setForeground(Color.BLACK);
+        btnTambah.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnTambah.setBounds(270, buttonY, buttonWidth, buttonHeight);
+        btnTambah.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnTambah.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
+        btnTambah.addActionListener(e -> {
+            // FIX: Mengambil Frame induk dengan aman agar JDialog tidak error list differ length
+            Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+            new TambahKaryawanDialog(parentFrame, true).setVisible(true);
+            loadDataKaryawan(); 
+        });
+        add(btnTambah);
 
-        createAbsensiTable();
+        JButton btnEdit = new JButton("Edit Karyawan");
+        btnEdit.setBackground(BUTTON_GRAY);
+        btnEdit.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnEdit.setBounds(270 + buttonWidth + buttonGap, buttonY, buttonWidth, buttonHeight);
+        btnEdit.addActionListener(e -> editKaryawan());
+        add(btnEdit);
 
-        JButton btnDownload = new JButton("Download Log Hari Ini (.csv)");
-        btnDownload.setFont(new Font("SansSerif", Font.BOLD, 14));
-        btnDownload.setBackground(Color.WHITE);
-        btnDownload.setForeground(Color.BLACK);
-        btnDownload.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnDownload.setBounds(270, 650, 250, 35);
-        add(btnDownload);
+        JButton btnHapus = new JButton("Hapus Karyawan");
+        btnHapus.setBackground(BUTTON_GRAY);
+        btnHapus.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnHapus.setBounds(270 + (buttonWidth + buttonGap) * 2, buttonY, buttonWidth, buttonHeight);
+        btnHapus.addActionListener(e -> hapusKaryawan());
+        add(btnHapus);
+
+        createKaryawanTable();
     }
 
-    private void createStatisticsCards() {
-        int xPos = 270;
-        int yPos = 145;
-        int cardWidth = 190;
-        int cardHeight = 90;
-        int gap = 50;
-
-        lblTepatWaktuValue = new JLabel("0 Orang");
-        createStatCard("Tepat Waktu", lblTepatWaktuValue, xPos, yPos, cardWidth, cardHeight);
-        xPos += cardWidth + gap;
-
-        lblTerlambatValue = new JLabel("0 Orang");
-        createStatCard("Terlambat", lblTerlambatValue, xPos, yPos, cardWidth, cardHeight);
-        xPos += cardWidth + gap;
-
-        lblAbsenValue = new JLabel("0 Orang");
-        createStatCard("Absen", lblAbsenValue, xPos, yPos, cardWidth, cardHeight);
-    }
-
-    private void createStatCard(String title, JLabel valueLabel, int x, int y, int width, int height) {
-        JPanel card = new JPanel();
-        card.setLayout(new GridBagLayout());
-        card.setBackground(BUTTON_GRAY);
-        card.setBounds(x, y, width, height);
-        card.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.insets = new Insets(5, 0, 5, 0);
-
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        gbc.gridy = 0;
-        card.add(titleLabel, gbc);
-
-        valueLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        gbc.gridy = 1;
-        card.add(valueLabel, gbc);
-
-        add(card);
-    }
-
-    private void createAbsensiTable() {
-        String[] columnNames = {"Waktu Tapping", "Nama Karyawan", "ID Karyawan", "Status Absen"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
+    private void createKaryawanTable() {
+        String[] cols = {"ID Karyawan", "Nama Karyawan", "Divisi", "Kontrak"};
+        tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
-
-        tblAbsensi = new JTable(tableModel);
-        tblAbsensi.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        tblAbsensi.setRowHeight(45);
-        tblAbsensi.setBackground(Color.WHITE);
+        tblKaryawan = new JTable(tableModel);
+        tblKaryawan.setRowHeight(45);
+        tblKaryawan.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        tblKaryawan.setSelectionBackground(new Color(2, 63, 75, 30));
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for (int i = 0; i < tblAbsensi.getColumnCount(); i++) {
-            tblAbsensi.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        for (int i = 0; i < tblKaryawan.getColumnCount(); i++) {
+            tblKaryawan.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        JTableHeader h = tblAbsensi.getTableHeader();
+        JTableHeader h = tblKaryawan.getTableHeader();
         h.setBackground(PRIMARY_COLOR);
         h.setForeground(Color.WHITE);
         h.setFont(new Font("SansSerif", Font.BOLD, 14));
         h.setPreferredSize(new Dimension(100, 40));
 
-        JScrollPane scrollPane = new JScrollPane(tblAbsensi);
-        scrollPane.setBounds(270, 305, 900, 330);
-        add(scrollPane);
+        JScrollPane sp = new JScrollPane(tblKaryawan);
+        sp.setBounds(270, 245, 900, 420);
+        add(sp);
     }
 
     private JButton createMenuButton(String text, boolean isActive) {
@@ -293,57 +259,75 @@ public class DashboardPage extends javax.swing.JFrame {
         }
         return button;
     }
-    
-    public void loadLiveAbsensi() {
+
+    public void loadDataKaryawan() {
         try {
-            GenericDAO<LogAbsensi> dao = new GenericDAO<>("absensi", LogAbsensi.class);
-            List<LogAbsensi> list = dao.findAll();
-            
+            GenericDAO<Karyawan> dao = new GenericDAO<>("karyawan", Karyawan.class);
+            List<Karyawan> list = dao.findAll();
             tableModel.setRowCount(0);
-            int tepatWaktuCount = 0;
-            int terlambatCount = 0;
-            int absenCount = 0;
 
-            for (LogAbsensi log : list) {
+            for (Karyawan k : list) {
                 tableModel.addRow(new Object[]{
-                    log.getWaktu(),
-                    log.getNamaKaryawan(),
-                    log.getIdKaryawan(),
-                    log.getStatus()
+                    k.getIdKaryawan(),
+                    k.getNamaLengkap(),
+                    k.getDivisi(),  
+                    k.getKontrak()
                 });
-
-                String status = log.getStatus().toLowerCase();
-                if (status.contains("tepat") || status.contains("waktu")) {
-                    tepatWaktuCount++;
-                } else if (status.contains("telat") || status.contains("lambat")) {
-                    terlambatCount++;
-                } else {
-                    absenCount++;
-                }
             }
-
-            lblTepatWaktuValue.setText(tepatWaktuCount + " Orang");
-            lblTerlambatValue.setText(terlambatCount + " Orang");
-            lblAbsenValue.setText(absenCount + " Orang");
         } catch (Exception e) {
-            System.err.println("Gagal sinkron log absensi: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
+    private void editKaryawan() {
+        int selectedRow = tblKaryawan.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Silakan pilih karyawan yang ingin diedit!");
+            return;
+        }
+        String idKaryawan = tableModel.getValueAt(selectedRow, 0).toString();
+        JOptionPane.showMessageDialog(this, "Edit karyawan: " + idKaryawan + "\n(Fitur dalam pengembangan)");
+    }
+
+    private void hapusKaryawan() {
+        int selectedRow = tblKaryawan.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Silakan pilih karyawan yang ingin dihapus!");
+            return;
+        }
+
+        String idKaryawan = tableModel.getValueAt(selectedRow, 0).toString();
+        String namaKaryawan = tableModel.getValueAt(selectedRow, 1).toString();
+
+        int confirm = JOptionPane.showConfirmDialog(this, 
+            "Apakah Anda yakin ingin menghapus karyawan:\n" + namaKaryawan + " (" + idKaryawan + ") dari database?", 
+            "Konfirmasi Hapus Permanen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                GenericDAO<Karyawan> dao = new GenericDAO<>("karyawan", Karyawan.class);
+                dao.delete(Filters.eq("idKaryawan", idKaryawan)); 
+                
+                tableModel.removeRow(selectedRow); 
+                JOptionPane.showMessageDialog(this, "Karyawan " + namaKaryawan + " berhasil dihapus secara permanen!");
+                loadDataKaryawan();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Gagal menghapus data: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
+        setPreferredSize(new java.awt.Dimension(1280, 720));
+        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -358,7 +342,7 @@ public class DashboardPage extends javax.swing.JFrame {
             e.printStackTrace();
         }
         java.awt.EventQueue.invokeLater(() -> {
-            new DashboardPage().setVisible(true);
+            new DataKaryawanPage().setVisible(true);
         });
     }
 
