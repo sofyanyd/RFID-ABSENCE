@@ -282,11 +282,20 @@ public class DataKaryawanPage extends javax.swing.JFrame {
     private void editKaryawan() {
         int selectedRow = tblKaryawan.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Silakan pilih karyawan yang ingin diedit!");
+            JOptionPane.showMessageDialog(this, "Silakan pilih karyawan yang ingin diedit dari tabel terlebih dahulu!");
             return;
         }
+        
+        // Mengambil string ID Karyawan dari baris tabel yang diklik user
         String idKaryawan = tableModel.getValueAt(selectedRow, 0).toString();
-        JOptionPane.showMessageDialog(this, "Edit karyawan: " + idKaryawan + "\n(Fitur dalam pengembangan)");
+        
+        // Panggil JDialog Edit Karyawan secara aman menggunakan penemu induk Window/Frame
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        EditKaryawanDialog dialog = new EditKaryawanDialog(parentFrame, true, idKaryawan);
+        dialog.setVisible(true);
+        
+        // Refresh tabel live absensi/karyawan sesudah dialog ditutup agar perubahan langsung kelihatan
+        loadDataKaryawan();
     }
 
     private void hapusKaryawan() {
