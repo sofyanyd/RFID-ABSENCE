@@ -1,15 +1,18 @@
 package MainApp;
 
-import com.rmakmurjayaabadi.rfid.absence.Karyawan;
+import com.rmakmurjayaabadi.rfid.absence.GUI.DashboardPage;
+import com.formdev.flatlaf.FlatLightLaf;
 
 public class MainApp {
     public static void main(String[] args) {
-        Karyawan KR = new Karyawan();
-        if(KR instanceof Karyawan){
-            System.err.println("Karyawan");
-        }else {
-            System.err.println("Something else");
-        }// //
-        // //
+        try {
+            FlatLightLaf.setup();
+        } catch (Exception e) {
+            System.err.println("Gagal mengaktifkan tema FlatLaf.");
+        }
+
+        java.awt.EventQueue.invokeLater(() -> {
+            new DashboardPage().setVisible(true);
+        });
     }
 }
