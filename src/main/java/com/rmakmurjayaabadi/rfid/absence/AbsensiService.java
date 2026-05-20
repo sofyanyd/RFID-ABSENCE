@@ -38,17 +38,24 @@ public class AbsensiService {
             return; 
         }
 
-        // 2. Ambil pengaturan jam kerja (Shift)
-        Shift aturanShift = shiftDAO.findOne(new Document()); // Mengambil dokumen pertama
-        
-        if (aturanShift == null) {
-            System.out.println("⚠️ Pengaturan shift belum diatur di database!");
-            return;
+        // 2. Ambil pengaturan jam kerja (Shift) dengan pengaman otomatis (Fallback)
+        LocalTime batasToleransi;
+        try {
+            Shift aturanShift = shiftDAO.findOne(new Document()); // Mengambil dokumen pertama
+            if (aturanShift != null && aturanShift.getBatasToleransi() != null) {
+                batasToleransi = LocalTime.parse(aturanShift.getBatasToleransi());
+            } else {
+                // Pengaman jika koleksi shift kosong di Compass, set default jam 08:15
+                System.out.println("💡 Info: Koleksi 'shift' kosong, menggunakan batas default 08:15:00");
+                batasToleransi = LocalTime.of(8, 15, 0);
+            }
+        } catch (Exception e) {
+            System.out.println("💡 Info: Gagal memuat shift, menggunakan batas default 08:15:00");
+            batasToleransi = LocalTime.of(8, 15, 0);
         }
 
-        // 3. Logika perhitungan waktu
+        // 3. Logika perhitungan waktu riil
         LocalTime waktuSekarang = LocalTime.now();
-        LocalTime batasToleransi = LocalTime.parse(aturanShift.getBatasToleransi());
         
         // Tentukan status: Jika waktu sekarang lewat dari batas toleransi -> Telat
         String statusAbsen = waktuSekarang.isAfter(batasToleransi) ? "Telat" : "Tepat";
@@ -63,9 +70,10 @@ public class AbsensiService {
             karyawan.getDivisi()
         );
 
-        // 5. Simpan ke MongoDB
+        // 5. Simpan ke MongoDB secara Live!
         absensiDAO.save(logBaru);
         
-        System.out.println("✅ Absensi Berhasil: " + karyawan.getNamaLengkap() + " (" + statusAbsen + ")");
+        System.out.println("🚀 [DATABASE UPDATE] Berhasil insert log absensi!");
+        System.out.println("✅ Absensi Berhasil: " + karyawan.getNamaLengkap() + " [" + karyawan.getIdKaryawan() + "] -> Status: " + statusAbsen);
     }
 }

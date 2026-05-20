@@ -12,7 +12,7 @@ import com.rmakmurjayaabadi.rfid.absence.MongoManager;
 import java.awt.*;
 import java.util.List;
 import javax.swing.*;
-import javax.swing.table.*;
+import javax.swing.table.*;   
 /**
  *
  * @author sofya
@@ -41,11 +41,12 @@ public class DashboardPage extends javax.swing.JFrame {
             System.out.println("🔗 Membuka koneksi MongoDB...");
             MongoManager.getDatabase(); 
             
-            System.out.println("📊 Sinkronisasi data live absensi...");
+            System.out.println("📊 Sinkronisasi data live absensi dari database...");
             loadLiveAbsensi(); 
         } catch (Exception e) {
-            System.err.println("⚠️ Gagal sinkronisasi otomatis, menggunakan Demo Mode.");
+            System.err.println("⚠️ Gagal sinkronisasi otomatis dengan MongoDB Compass!");
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal terhubung ke database MongoDB!", "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -249,7 +250,7 @@ public class DashboardPage extends javax.swing.JFrame {
     }
 
     private void createAbsensiTable() {
-        String[] columnNames = {"Waktu Tapping", "Nama Karyawan", "ID Karyawan", "Status Absen"};
+        String[] columnNames = {"Waktu", "Nama Karyawan", "ID Karyawan", "Status Absen"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
@@ -296,13 +297,16 @@ public class DashboardPage extends javax.swing.JFrame {
     
     public void loadLiveAbsensi() {
         try {
+            // MENARIK DATA ASLI DARI DATABASE MONGODB
             GenericDAO<LogAbsensi> dao = new GenericDAO<>("absensi", LogAbsensi.class);
             List<LogAbsensi> list = dao.findAll();
             
-            tableModel.setRowCount(0);
+            tableModel.setRowCount(0); // Bersihkan sisa tabel lama
             int tepatWaktuCount = 0;
             int terlambatCount = 0;
             int absenCount = 0;
+
+            System.out.println("DEBUG: Ditemukan " + list.size() + " dokumen absensi di DB.");
 
             for (LogAbsensi log : list) {
                 tableModel.addRow(new Object[]{
@@ -312,7 +316,7 @@ public class DashboardPage extends javax.swing.JFrame {
                     log.getStatus()
                 });
 
-                String status = log.getStatus().toLowerCase();
+                String status = log.getStatus() != null ? log.getStatus().toLowerCase() : "";
                 if (status.contains("tepat") || status.contains("waktu")) {
                     tepatWaktuCount++;
                 } else if (status.contains("telat") || status.contains("lambat")) {
@@ -322,11 +326,13 @@ public class DashboardPage extends javax.swing.JFrame {
                 }
             }
 
+            // Update isi statistik box atas sesuai data riil MongoDB Compass
             lblTepatWaktuValue.setText(tepatWaktuCount + " Orang");
             lblTerlambatValue.setText(terlambatCount + " Orang");
             lblAbsenValue.setText(absenCount + " Orang");
+            
         } catch (Exception e) {
-            System.err.println("Gagal sinkron log absensi: " + e.getMessage());
+            System.err.println("❌ Gagal membaca live data dari database: " + e.getMessage());
         }
     }
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents

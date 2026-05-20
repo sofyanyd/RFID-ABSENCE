@@ -1,10 +1,12 @@
 package com.rmakmurjayaabadi.rfid.absence;
 
-import com.mongodb.client.model.Filters;
 import com.rmakmurjayaabadi.rfid.absence.GUI.DashboardPage;
 import com.rmakmurjayaabadi.rfid.absence.GUI.DataKaryawanPage;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-
+import java.util.Random;
 /**
  * Test class untuk verify aplikasi berjalan dengan baik
  * Run: java -cp "target/classes" com.rmakmurjayaabadi.rfid.absence.TestApp
@@ -12,15 +14,16 @@ import java.util.List;
 public class TestApp {
 
     public static void main(String[] args) {
-        System.out.println("\n" + "=".repeat(70));
-        System.out.println("🧪 RFID Absence System - Test Application Suite");
-        System.out.println("=".repeat(70));
+        System.out.println("\n" + "=".repeat(75));
+        System.out.println("🧪 RFID Absence System - Live Tapping & Simulation Suite");
+        System.out.println("=".repeat(75));
         System.out.println();
 
-        // Jalankan rangkaian pengujian backend
+        // 1. Jalankan verifikasi koneksi cluster
         testMongoDBConnection();
-        testGenericDAOKaryawan();
-        testGenericDAOLogAbsensi();
+        
+        // 2. Jalankan logika simulasi tapping masuk secara acak dan push ke DB
+        simulasiTappingMasukLive();
 
         // Navigasi GUI via parameter argumen NetBeans jika dibutuhkan
         if (args.length > 0 && args[0].equals("--gui")) {
@@ -28,23 +31,23 @@ public class TestApp {
         } else if (args.length > 0 && args[0].equals("--data-karyawan")) {
             launchDataKaryawan();
         } else {
-            System.out.println("\n💡 Tip: Run langsung file DashboardPage.java untuk melihat UI");
+            System.out.println("\n💡 Tip: Run langsung file DashboardPage.java jika ingin melihat UI");
         }
 
-        System.out.println("\n" + "=".repeat(70));
-        System.out.println("✅ Seluruh rangkaian uji coba selesai!");
-        System.out.println("=".repeat(70) + "\n");
+        System.out.println("\n" + "=".repeat(75));
+        System.out.println("✅ Seluruh simulasi test push database selesai!");
+        System.out.println("=".repeat(75) + "\n");
     }
 
     private static void testMongoDBConnection() {
         System.out.println("📝 Test 1: Verifikasi Koneksi Driver MongoDB");
-        System.out.println("-".repeat(70));
+        System.out.println("-".repeat(75));
         try {
             MongoManager.getDatabase();
             if (MongoManager.isConnected()) {
                 System.out.println("✅ Driver Terkoneksi Aktif ke Cluster Lokal!");
             } else {
-                System.out.println("⚠️  MongoDB Offline / Tidak merespon (Aplikasi masuk Demo Mode)");
+                System.out.println("⚠️  MongoDB Offline / Menggunakan Demo Mode");
             }
         } catch (Exception e) {
             System.err.println("❌ Error koneksi: " + e.getMessage());
@@ -52,47 +55,41 @@ public class TestApp {
         System.out.println();
     }
 
-    private static void testGenericDAOKaryawan() {
-        System.out.println("📝 Test 2: Pengujian Sinkronisasi DAO Karyawan");
-        System.out.println("-".repeat(70));
+    private static void simulasiTappingMasukLive() {
+        System.out.println("📝 Test 2: Pengujian Alur Absensi lewat AbsensiService");
+        System.out.println("-".repeat(75));
         try {
-            GenericDAO<Karyawan> dao = new GenericDAO<>("karyawan", Karyawan.class);
-            List<Karyawan> list = dao.findAll();
+            // 1. Ambil salah satu data UID RFID secara live dari database karyawan
+            GenericDAO<Karyawan> karyawanDao = new GenericDAO<>("karyawan", Karyawan.class);
+            List<Karyawan> listKaryawan = karyawanDao.findAll();
 
-            System.out.println("✅ Sukses memuat " + list.size() + " data objek karyawan.");
-
-            if (!list.isEmpty()) {
-                System.out.println("\n📊 Pratinjau Data Karyawan (Max 3):");
-                for (int i = 0; i < Math.min(3, list.size()); i++) {
-                    Karyawan k = list.get(i);
-                    System.out.println("   [" + (i+1) + "] ID: " + k.getIdKaryawan() + " | Nama: " + k.getNamaLengkap() + " | Divisi: " + k.getDivisi());
-                }
+            if (listKaryawan.isEmpty()) {
+                System.out.println("⚠️ Simulasi gagal: Koleksi data karyawan kosong!");
+                return;
             }
+
+            // 2. Acak karyawan yang akan melakukan tapping kartu
+            Random rand = new Random();
+            Karyawan kandidat = listKaryawan.get(rand.nextInt(listKaryawan.size()));
+            String uidScanSimulasi = kandidat.getUidRfid();
+
+            System.out.println("📟 [SCANNER RFID] Kartu Terbaca dengan UID: " + uidScanSimulasi);
+            System.out.println("⏳ Mengirim UID ke AbsensiService...");
+
+            // 3. PANGGIL ABSENSI SERVICE YANG LU PERTANYAKAN
+            AbsensiService service = new AbsensiService();
+            service.prosesAbsensi(uidScanSimulasi); // Logika pemrosesan database berjalan di sini
+
+            System.out.println("-".repeat(75));
+            
+            // 4. Tarik ulang log absensi untuk memverifikasi live update di MongoDB
+            GenericDAO<LogAbsensi> absensiDao = new GenericDAO<>("absensi", LogAbsensi.class);
+            List<LogAbsensi> totalLog = absensiDao.findAll();
+            System.out.println("📊 Verifikasi MongoDB: Total baris log di koleksi 'absensi' sekarang: " + totalLog.size());
+
         } catch (Exception e) {
-            System.err.println("❌ Error memuat data Karyawan: " + e.getMessage());
-        }
-        System.out.println();
-    }
-
-    private static void testGenericDAOLogAbsensi() {
-        System.out.println("📝 Test 3: Pengujian Sinkronisasi DAO Log Absensi");
-        System.out.println("-".repeat(70));
-        try {
-            // Memastikan penembakan nama koleksi "absensi" tepat sasaran seperti di Compass
-            GenericDAO<LogAbsensi> dao = new GenericDAO<>("absensi", LogAbsensi.class);
-            List<LogAbsensi> list = dao.findAll();
-
-            System.out.println("✅ Sukses memuat " + list.size() + " rekaman log aktivitas.");
-
-            if (!list.isEmpty()) {
-                System.out.println("\n📊 Pratinjau Aktivitas Tapping Kartu (Max 3):");
-                for (int i = 0; i < Math.min(3, list.size()); i++) {
-                    LogAbsensi log = list.get(i);
-                    System.out.println("   [" + (i+1) + "] Jam: " + log.getWaktu() + " | Karyawan: " + log.getNamaKaryawan() + " | Status: " + log.getStatus());
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error memuat data Log Absensi: " + e.getMessage());
+            System.err.println("❌ Gagal memproses service absensi: " + e.getMessage());
+            e.printStackTrace();
         }
         System.out.println();
     }

@@ -2,7 +2,7 @@ package com.rmakmurjayaabadi.rfid.absence;
 
 /**
  * Model untuk Shift kerja karyawan
- * @author MJA IT Team
+ * @author sofya
  */
 public class Shift {
     private String jamMasuk;
